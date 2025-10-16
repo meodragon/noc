@@ -32,6 +32,8 @@ typedef struct rca_replicated_state_machine {
 
 	/* noc defines */
 	enum RCA_REPLICATED_STATE_MACHINE_STATE state;
+    pthread_mutex_t lock;
+    pthread_cond_t elect;
 
 } rca_replicated_state_machine;
 

@@ -21,19 +21,20 @@ rca_run(void* machine_ptr)
 
         switch (machine->state) {
             case FOLLOWER: {
-                pthread_mutex_lock();
+                pthread_mutex_lock(&machine->lock);
 
                 const struct timespec abstime = noc_add_timespec_ms(500);
-                int error = pthread_cond_timedwait(&, &lock, &abstime);
+                int error = pthread_cond_timedwait(&machine->elect, &machine->lock, &abstime);
                 if (!error) {
 
                 } else if (error == ETIMEDOUT) {
-
+                    machine->current_term++;
+                    machine->state = CANDIDATE;
                 } else {
-                    printf();
+                    printf("pthread cond timedwait %d\n", error);
                     exit(EXIT_FAILURE);
                 }
-                pthread_mutex_unlock();
+                pthread_mutex_unlock(&machine->lock);
                 break;
             }
             case CANDIDATE: {
