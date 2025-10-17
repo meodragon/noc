@@ -14,6 +14,10 @@ rca_run(void* machine_ptr)
 {
     rca_replicated_state_machine* machine = (rca_replicated_state_machine*)machine_ptr;
     for (;;) {
+        if (machine->suspend) {
+            printf("rca %d run suspend\n", machine->id);
+            break;
+        }
 
         switch (machine->state) {
             case FOLLOWER: {
@@ -21,15 +25,15 @@ rca_run(void* machine_ptr)
 
                 const struct timespec abstime = noc_add_timespec_ms(500);
                 int error = pthread_cond_timedwait(&machine->elect, &machine->lock, &abstime);
-                if (!error) {
-
-                } else if (error == ETIMEDOUT) {
+                if (error == ETIMEDOUT) {
                     machine->current_term++;
                     machine->state = CANDIDATE;
-                } else {
+                } else if (error) {
                     printf("pthread cond timedwait %d\n", error);
-                    exit(EXIT_FAILURE);
+                    machine->suspend = true;
+                    //exit(EXIT_FAILURE);
                 }
+
                 pthread_mutex_unlock(&machine->lock);
                 break;
             }
@@ -47,14 +51,19 @@ void *
 rca_apply(rca_replicated_state_machine* machine)
 {
     for (;;) {
+        if (machine->suspend) {
+            printf("rca %d apply: suspend\n", machine->id);
+            break;
+        }
         if (machine->commit_index > machine->last_applied) {
-            int err = rca_log_append(last_applied);
+            pthread_mutex_lock(&machine->lock);
+            machine->last_applied = machine->commit_index;
+            int err = rca_log_append(machine, last_applied);
             if (err) {
-                printf("rca log append %d\n", last_applied);
+                printf("rca %d log append %d\n", machine->id, last_applied);
                 machine->suspend = true;
-                break;
             }
-            machine->last_applied++;
+            pthread_mutex_unlock(&machine->lock);
         }
     }
 }
@@ -67,7 +76,7 @@ rca_apply(rca_replicated_state_machine* machine)
  *
  */
 int
-rca_log_append(int last_applied)
+rca_log_append(rca_replicated_state_machine* machine, int last_applied)
 {
 
 }

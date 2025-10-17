@@ -34,6 +34,7 @@ typedef struct rca_replicated_state_machine {
 	enum RCA_REPLICATED_STATE_MACHINE_STATE state;
     pthread_mutex_t lock;
     pthread_cond_t elect;
+    int id;
 
 } rca_replicated_state_machine;
 
