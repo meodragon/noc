@@ -14,10 +14,6 @@ rca_run(void* machine_ptr)
 {
     rca_replicated_state_machine* machine = (rca_replicated_state_machine*)machine_ptr;
     for (;;) {
-        if (machine->commit_index > machine->last_applied) {
-            machine->last_applied++;
-            rca_log_append(last_applied);
-        }
 
         switch (machine->state) {
             case FOLLOWER: {
@@ -49,6 +45,29 @@ rca_run(void* machine_ptr)
 
 void *
 rca_apply(rca_replicated_state_machine* machine)
+{
+    for (;;) {
+        if (machine->commit_index > machine->last_applied) {
+            int err = rca_log_append(last_applied);
+            if (err) {
+                printf("rca log append %d\n", last_applied);
+                machine->suspend = true;
+                break;
+            }
+            machine->last_applied++;
+        }
+    }
+}
+
+/*
+ * Local log append
+ *
+ * RETURNS
+ * 0 err if success, otherwise:
+ *
+ */
+int
+rca_log_append(int last_applied)
 {
 
 }
