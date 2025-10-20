@@ -69,6 +69,18 @@ rca_apply(rca_replicated_state_machine* machine)
 }
 
 /*
+ * Use inside a critical section. Persist state.
+ *
+ * RETURNS
+ *
+ */
+int
+rca_persist(rca_replicated_state_machine* machine)
+{
+
+}
+
+/*
  * Local log append
  *
  * RETURNS

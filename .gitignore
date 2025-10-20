@@ -1,2 +1,4 @@
 noc.cbp
 noc.layout
+obj/
+bin/
