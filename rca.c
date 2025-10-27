@@ -28,6 +28,7 @@ rca_run(void* machine_ptr)
                 if (error == ETIMEDOUT) {
                     machine->current_term++;
                     machine->state = CANDIDATE;
+                    rca_persist(machine);
                 } else if (error) {
                     printf("pthread cond timedwait %d\n", error);
                     machine->suspend = true;
@@ -57,11 +58,12 @@ rca_apply(rca_replicated_state_machine* machine)
         }
         if (machine->commit_index > machine->last_applied) {
             pthread_mutex_lock(&machine->lock);
-            machine->last_applied = machine->commit_index;
+            ++machine->last_applied;
+            rca_persist(machine);
             int err = rca_log_append(machine, last_applied);
             if (err) {
-                printf("rca %d log append %d\n", machine->id, last_applied);
-                machine->suspend = true;
+                printf("rca %d log append %d (err:%d)\n", machine->id, last_applied, err);
+                // machine->suspend = true;
             }
             pthread_mutex_unlock(&machine->lock);
         }
@@ -81,7 +83,10 @@ rca_persist(rca_replicated_state_machine* machine)
 }
 
 /*
- * Local log append
+ * Local log append.
+ * At this point, last-applied increased, after persistence, the
+ * log[last-applied] is available on local file. This subroutine task should be
+ * optional and the error code can be ignore.
  *
  * RETURNS
  * 0 err if success, otherwise:

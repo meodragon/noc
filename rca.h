@@ -19,6 +19,7 @@ typedef struct rca_replicated_state_machine {
 	int current_term;
 	int voted_for;
 	struct {
+		int log_offset;
 		int log_size;
 		rca_log *log;
 	};
